@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Orð eru ævintýri</title>
+
+<style>
+
+body{
+    margin:0;
+    padding:20px;
+    font-family:Arial, sans-serif;
+    text-align:center;
+    background:linear-gradient(to bottom,#eaf5ff,#ffffff);
+}
+
+h1{
+    color:#234;
+}
+
+#startScreen,
+#gameOver{
+    margin-top:40px;
+}
+
+button{
+    padding:12px 24px;
+    font-size:18px;
+    border:none;
+    border-radius:12px;
+    cursor:pointer;
+    background:#1976d2;
+    color:white;
+}
+
+button:hover{
+    background:#125cad;
+}
+
+#topbar{
+    display:flex;
+    justify-content:center;
+    gap:25px;
+    flex-wrap:wrap;
+    margin:15px 0;
+    font-size:22px;
+    font-weight:bold;
+}
+
+#skilabod{
+    height:45px;
+    font-size:28px;
+    margin-top:10px;
+}
+
+#myndir{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:25px;
+    max-width:1100px;
+    margin:25px auto;
+}
+
+.spjald{
+    background:white;
+    padding:15px;
+    border-radius:20px;
+    box-shadow:0 4px 12px rgba(0,0,0,.15);
+    cursor:pointer;
+    transition:.2s;
+    position:relative;
+}
+
+.spjald:hover{
+    transform:scale(1.03);
+}
+
+.spjald img{
+    width:100%;
+    height:280px;
+    object-fit:contain;
+}
+
+.stjarna{
+    position:absolute;
+    top:10px;
+    right:15px;
+    font-size:70px;
+    color:gold;
+    animation:pop .4s;
+}
+
+@keyframes pop{
+    from{
+        transform:scale(0);
+    }
+    to{
+        transform:scale(1);
+    }
+}
+
+.disabled{
+    pointer-events:none;
+    opacity:0.8;
+}
+
+#gameArea{
+    display:none;
+}
+
+#gameOver{
+    display:none;
+}
+
+#lokastig{
+    font-size:32px;
+    font-weight:bold;
+    color:#1b5e20;
+}
+
+@media(max-width:900px){
+
+    #myndir{
+        grid-template-columns:1fr;
+    }
+
+    .spjald img{
+        height:200px;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>📚 Orð eru ævintýri</h1>
+
+<div id="startScreen">
+
+    <h2>Hlustaðu á orðið og veldu réttu myndina.</h2>
+
+    <p>
+        Leikurinn inniheldur 15 spurningar.
+    </p>
+
+    <button id="startBtn">
+        ▶ Byrja leik
+    </button>
+
+</div>
+
+<div id="gameArea">
+
+    <div id="topbar">
+        <div id="stig">Stig: 0</div>
+        <div id="spurningar">Spurning: 0 / 15</div>
+    </div>
+
+    <button onclick="lesaOrd()">
+        🔊 Heyra orðið aftur
+    </button>
+
+    <div id="skilabod"></div>
+
+    <div id="myndir"></div>
+
+</div>
+
+<div id="gameOver">
+
+    <h2>🎉 Leik lokið!</h2>
+
+    <p id="lokastig"></p>
+
+    <button onclick="endurraesa()">
+        🔄 Spila aftur
+    </button>
+
+</div>
+
+<script>
+
+const MAX_SPURNINGAR = 15;
+
+let ordalisti = [];
+
+let stig = 0;
+let spurningNr = 0;
+let rettOrd = "";
+let leyfaSmell = false;
+let notudOrd = [];
+
+async function hlaedaOrdum(){
+
+    const response = await fetch("ord.json");
+
+    ordalisti = await response.json();
+
+}
+
+function stokka(arr){
+
+    return [...arr].sort(() => Math.random() - 0.5);
+
+}
+
+function uppfaeraHaus(){
+
+    document.getElementById("stig").textContent =
+        "Stig: " + stig;
+
+    document.getElementById("spurningar").textContent =
+        "Spurning: " + spurningNr + " / " + MAX_SPURNINGAR;
+
+}
+
+function velja3(){
+
+    return stokka(ordalisti).slice(0,3);
+
+}
+
+function veljaNyttOrd(thrjar){
+
+    let ibodi =
+        thrjar.filter(x => !notudOrd.includes(x));
+
+    if(ibodi.length === 0){
+
+        ibodi = thrjar;
+
+    }
+
+    return ibodi[
+        Math.floor(Math.random() * ibodi.length)
+    ];
+}
+
+function lesaOrd(){
+
+    if(!rettOrd) return;
+
+    leyfaSmell = false;
+
+    document.getElementById("myndir")
+        .classList.add("disabled");
+
+    speechSynthesis.cancel();
+
+    const tala =
+        new SpeechSynthesisUtterance(rettOrd);
+
+    tala.lang = "is-IS";
+    tala.rate = 0.9;
+
+    tala.onend = () => {
+
+        leyfaSmell = true;
+
+        document.getElementById("myndir")
+            .classList.remove("disabled");
+
+    };
+
+    speechSynthesis.speak(tala);
+}
+
+function nyUmferd(){
+
+    if(spurningNr >= MAX_SPURNINGAR){
+
+        leikLokid();
+        return;
+
+    }
+
+    spurningNr++;
+
+    uppfaeraHaus();
+
+    document.getElementById("skilabod")
+        .innerHTML = "";
+
+    const thrjar = velja3();
+
+    rettOrd = veljaNyttOrd(thrjar);
+
+    notudOrd.push(rettOrd);
+
+    const myndirDiv =
+        document.getElementById("myndir");
+
+    myndirDiv.innerHTML = "";
+
+    thrjar.forEach(ord => {
+
+        const spjald =
+            document.createElement("div");
+
+        spjald.className = "spjald";
+
+        const mynd =
+            document.createElement("img");
+
+        mynd.src =
+            "Myndir/" + ord + ".png";
+
+        mynd.alt = ord;
+
+        spjald.appendChild(mynd);
+
+        spjald.onclick = () => {
+
+            if(!leyfaSmell) return;
+
+            if(ord === rettOrd){
+
+                leyfaSmell = false;
+
+                stig++;
+
+                uppfaeraHaus();
+
+                document.getElementById("skilabod")
+                    .innerHTML =
+                    "✅ Rétt svar!";
+
+                const stjarna =
+                    document.createElement("div");
+
+                stjarna.className = "stjarna";
+
+                stjarna.innerHTML = "⭐";
+
+                spjald.appendChild(stjarna);
+
+                setTimeout(() => {
+
+                    nyUmferd();
+
+                },1500);
+
+            }
+            else{
+
+                document.getElementById("skilabod")
+                    .innerHTML =
+                    "❌ Reyndu aftur";
+
+                lesaOrd();
+
+            }
+
+        };
+
+        myndirDiv.appendChild(spjald);
+
+    });
+
+    setTimeout(() => {
+
+        lesaOrd();
+
+    },500);
+
+}
+
+function leikLokid(){
+
+    document.getElementById("gameArea")
+        .style.display = "none";
+
+    document.getElementById("gameOver")
+        .style.display = "block";
+
+    const prosent =
+        Math.round(
+            (stig / MAX_SPURNINGAR) * 100
+        );
+
+    let umsogn = "";
+
+    if(prosent >= 90){
+
+        umsogn = "🏆 Frábær árangur!";
+
+    }
+    else if(prosent >= 70){
+
+        umsogn = "🌟 Vel gert!";
+
+    }
+    else{
+
+        umsogn = "😊 Góð tilraun!";
+
+    }
+
+    document.getElementById("lokastig")
+        .innerHTML =
+        `${umsogn}<br><br>${stig} af ${MAX_SPURNINGAR} stigum<br>(${prosent}%)`;
+
+}
+
+async function hefjaLeik(){
+
+    await hlaedaOrdum();
+
+    stig = 0;
+    spurningNr = 0;
+    notudOrd = [];
+
+    document.getElementById("startScreen")
+        .style.display = "none";
+
+    document.getElementById("gameArea")
+        .style.display = "block";
+
+    document.getElementById("gameOver")
+        .style.display = "none";
+
+    uppfaeraHaus();
+
+    nyUmferd();
+
+}
+
+function endurraesa(){
+
+    hefjaLeik();
+
+}
+
+document
+.getElementById("startBtn")
+.addEventListener("click", hefjaLeik);
+
+</script>
+
+</body>
+</html>
