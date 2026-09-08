@@ -256,6 +256,26 @@ function lesaOrd(){
     tala.lang = "is-IS";
     tala.rate = 0.9;
 
+    const raddir =
+        speechSynthesis.getVoices();
+
+    const islenskRodd =
+        raddir.find(r =>
+            r.lang &&
+            r.lang.startsWith("is")
+        );
+
+    if(islenskRodd){
+
+        tala.voice = islenskRodd;
+
+        console.log(
+            "Nota rödd:",
+            islenskRodd.name
+        );
+
+    }
+
     tala.onend = () => {
 
         leyfaSmell = true;
@@ -266,6 +286,7 @@ function lesaOrd(){
     };
 
     speechSynthesis.speak(tala);
+
 }
 
 function nyUmferd(){
