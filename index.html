@@ -33,6 +33,7 @@ button{
     cursor:pointer;
     background:#1976d2;
     color:white;
+    margin:5px;
 }
 
 button:hover{
@@ -146,7 +147,19 @@ button:hover{
         Leikurinn inniheldur 15 spurningar.
     </p>
 
-    <button id="startBtn">
+    <h3>Veldu myndasafn</h3>
+
+    <button onclick="veljaSafn('Teiknimyndir')">
+        🎨 Teiknimyndir
+    </button>
+
+    <button onclick="veljaSafn('Ljósmyndir')">
+        📸 Ljósmyndir
+    </button>
+
+    <br><br>
+
+    <button id="startBtn" style="display:none;">
         ▶ Byrja leik
     </button>
 
@@ -185,6 +198,7 @@ button:hover{
 
 const MAX_SPURNINGAR = 15;
 
+let myndamappa = "";
 let ordalisti = [];
 
 let stig = 0;
@@ -196,8 +210,16 @@ let notudOrd = [];
 async function hlaedaOrdum(){
 
     const response = await fetch("ord.json");
-
     ordalisti = await response.json();
+
+}
+
+function veljaSafn(mappa){
+
+    myndamappa = mappa;
+
+    document.getElementById("startBtn")
+        .style.display = "inline-block";
 
 }
 
@@ -229,9 +251,7 @@ function veljaNyttOrd(thrjar){
         thrjar.filter(x => !notudOrd.includes(x));
 
     if(ibodi.length === 0){
-
         ibodi = thrjar;
-
     }
 
     return ibodi[
@@ -266,14 +286,7 @@ function lesaOrd(){
         );
 
     if(islenskRodd){
-
         tala.voice = islenskRodd;
-
-        console.log(
-            "Nota rödd:",
-            islenskRodd.name
-        );
-
     }
 
     tala.onend = () => {
@@ -327,7 +340,7 @@ function nyUmferd(){
             document.createElement("img");
 
         mynd.src =
-            "myndir/" + ord + ".png";
+            myndamappa + "/" + ord + ".png";
 
         mynd.alt = ord;
 
@@ -428,6 +441,13 @@ function leikLokid(){
 
 async function hefjaLeik(){
 
+    if(!myndamappa){
+
+        alert("Veldu fyrst myndasafn.");
+        return;
+
+    }
+
     await hlaedaOrdum();
 
     stig = 0;
@@ -451,7 +471,11 @@ async function hefjaLeik(){
 
 function endurraesa(){
 
-    hefjaLeik();
+    document.getElementById("gameOver")
+        .style.display = "none";
+
+    document.getElementById("startScreen")
+        .style.display = "block";
 
 }
 
